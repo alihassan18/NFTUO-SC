@@ -24,26 +24,31 @@ contract Airdrop is Ownable, Pausable {
     uint256 private expectedTokensAmount;
 
     address[] private whitelistedAddresses;
+    address[] private blacklistedAddresses;
 
     mapping(address => VestInfo) private vestInfoByAddress;
 
-    event Claimed(address indexed walletAddress, uint256 amount, uint256 claimedAt);
+    event Claimed(
+        address indexed walletAddress,
+        uint256 amount,
+        uint256 claimedAt
+    );
 
     constructor(
         IERC20 _nuoToken,
         uint256 _startTime,
-        uint256 _cliffInDays,
+        // uint256 _trancheTimeInDays,
         uint256 _claimPercentage,
         uint256 _numOfClaims
     ) {
         NuoToken = _nuoToken;
         startTime = _startTime;
-        trancheInDays = _cliffInDays * 1 days;
+        trancheInDays = 2 minutes;
         claimPercentage = _claimPercentage;
         claimsCap = _numOfClaims;
     }
 
-    function getTotalTokenReleased() public view returns(uint256) {
+    function getTotalTokenReleased() public view returns (uint256) {
         return totalTokenReleased;
     }
 
@@ -81,6 +86,21 @@ contract Airdrop is Ownable, Pausable {
         }
     }
 
+    function blacklistAddresses(address[] memory _addresses) public onlyOwner {
+        for (uint256 i = 0; i < _addresses.length; i++) {
+            require(
+                _addresses[i] != address(0),
+                "Airdrop: Address cannot be zero address"
+            );
+            VestInfo memory _vestInfo = vestInfoByAddress[_addresses[i]];
+
+            blacklistedAddresses.push(_addresses[i]);
+            expectedTokensAmount -= _vestInfo.totalVestedAmount;
+
+            vestInfoByAddress[_addresses[i]] = VestInfo(0, 0, 0, 0);
+        }
+    }
+
     function getWhitelistedAddresses() public view returns (address[] memory) {
         return whitelistedAddresses;
     }
@@ -100,7 +120,7 @@ contract Airdrop is Ownable, Pausable {
             uint256 _totalClaimableAmount,
             uint256 _mod,
             uint256 _claimsCount
-        ) = calculateClaimableAmount(_vestInfo);
+        ) = _calculateClaimableAmount(_vestInfo);
 
         NuoToken.transfer(msg.sender, _totalClaimableAmount);
 
@@ -113,7 +133,7 @@ contract Airdrop is Ownable, Pausable {
         emit Claimed(msg.sender, _totalClaimableAmount, block.timestamp);
     }
 
-    function calculateClaimableAmount(VestInfo memory _vestInfo)
+    function _calculateClaimableAmount(VestInfo memory _vestInfo)
         internal
         view
         returns (
@@ -150,6 +170,16 @@ contract Airdrop is Ownable, Pausable {
         }
     }
 
+    function availableAmountToClaim(address _address)
+        external
+        view
+        returns (uint256 _totalClaimableAmount)
+    {
+        (_totalClaimableAmount, , ) = _calculateClaimableAmount(
+            vestInfoByAddress[_address]
+        );
+    }
+
     function getVestInfo(address _addr)
         public
         view
@@ -158,9 +188,10 @@ contract Airdrop is Ownable, Pausable {
         return vestInfoByAddress[_addr];
     }
 
-    function fundsRequiredInContract() public view returns (int) {
+    function fundsRequiredInContract() public view returns (int256) {
         return
-            int(expectedTokensAmount) - int(totalTokenReleased) -
-            int(NuoToken.balanceOf(address(this)));
+            int256(expectedTokensAmount) -
+            int256(totalTokenReleased) -
+            int256(NuoToken.balanceOf(address(this)));
     }
 }
