@@ -37,13 +37,13 @@ contract Airdrop is Ownable, Pausable {
     constructor(
         IERC20 _nuoToken,
         uint256 _startTime,
-        // uint256 _trancheTimeInDays,
+        uint256 _trancheTimeInDays,
         uint256 _claimPercentage,
         uint256 _numOfClaims
     ) {
         NuoToken = _nuoToken;
         startTime = _startTime;
-        trancheInDays = 2 minutes;
+        trancheInDays = _trancheTimeInDays;
         claimPercentage = _claimPercentage;
         claimsCap = _numOfClaims;
     }
@@ -86,6 +86,7 @@ contract Airdrop is Ownable, Pausable {
         }
     }
 
+    // To be deleted
     function blacklistAddresses(address[] memory _addresses) public onlyOwner {
         for (uint256 i = 0; i < _addresses.length; i++) {
             require(
