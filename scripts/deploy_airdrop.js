@@ -25,7 +25,7 @@ async function main() {
 
   await airdrop.deployed();
 
-  console.log("Scar Speed NFT contract address", airdrop.address);
+  console.log("Airdrop contract address", airdrop.address);
 
   console.log(
     "Verify command :",
