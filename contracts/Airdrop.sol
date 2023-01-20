@@ -86,22 +86,6 @@ contract Airdrop is Ownable, Pausable {
         }
     }
 
-    // To be deleted
-    function blacklistAddresses(address[] memory _addresses) public onlyOwner {
-        for (uint256 i = 0; i < _addresses.length; i++) {
-            require(
-                _addresses[i] != address(0),
-                "Airdrop: Address cannot be zero address"
-            );
-            VestInfo memory _vestInfo = vestInfoByAddress[_addresses[i]];
-
-            blacklistedAddresses.push(_addresses[i]);
-            expectedTokensAmount -= _vestInfo.totalVestedAmount;
-
-            vestInfoByAddress[_addresses[i]] = VestInfo(0, 0, 0, 0);
-        }
-    }
-
     function getWhitelistedAddresses() public view returns (address[] memory) {
         return whitelistedAddresses;
     }
@@ -194,5 +178,12 @@ contract Airdrop is Ownable, Pausable {
             int256(expectedTokensAmount) -
             int256(totalTokenReleased) -
             int256(NuoToken.balanceOf(address(this)));
+    }
+
+    function withdrawTokens(address _address, uint256 _amount)
+        public
+        onlyOwner
+    {
+        NuoToken.transfer(_address, _amount);
     }
 }
