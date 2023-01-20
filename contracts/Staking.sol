@@ -5,38 +5,22 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-contract Staking is Ownable, Pausable {
+import "./Vault.sol";
+import "hardhat/console.sol";
+
+contract Staking is Ownable, Pausable, Vault, ReentrancyGuard {
     using Counters for Counters.Counter;
-
     Counters.Counter private stakeId;
 
-    struct StakeInfo {
-        address wallet;
-        uint256 stakedAmount;
-        uint256 lastClaimedAt;
-        uint256 totalClaimed;
-        uint256 stakedAt;
-    }
-
     IERC20 private Token;
-    uint256 private minStakingDays;
-    uint256 private minStakingAmount;
-    uint256 private rewardPercentage;
-    uint256 private numerator;
 
-    constructor(
-        IERC20 _tokenAddress,
-        uint256 _minStakingDays,
-        uint256 _minStakingAmount,
-        uint256 _rewardPercentage,
-        uint256 _numerator
-    ) {
+    constructor(IERC20 _tokenAddress) {
         Token = _tokenAddress;
-        minStakingDays = _minStakingDays * 1 days;
-        minStakingAmount = _minStakingAmount;
-        rewardPercentage = _rewardPercentage;
-        numerator = _numerator;
+        VAULTS[0] = VaultConfig(60, 1_000_000_000_000 ether, 365 days);
+        VAULTS[1] = VaultConfig(90, 500_000_000_000 ether, 2 * 365 days);
+        VAULTS[2] = VaultConfig(120, 500_000_000_000 ether, 3 * 365 days);
     }
 
     function pause() public onlyOwner {
@@ -47,47 +31,178 @@ contract Staking is Ownable, Pausable {
         _unpause();
     }
 
-    function getMinStakingPeriod() public view returns (uint256) {
-        return minStakingDays;
+    function getNuoToken() public view returns (address) {
+        return address(Token);
     }
 
-    function setMinStakingPeriod(uint256 _minStakingDays) public onlyOwner {
-        minStakingDays = _minStakingDays * 1 days;
+    function setNuoToken(IERC20 _tokenAddr) public onlyOwner {
+        Token = _tokenAddr;
     }
 
-    function getMinStakingAmount() public view returns (uint256) {
-        return minStakingAmount;
+    // Get all Vaults [enum]
+    function getVaults()
+        public
+        pure
+        returns (
+            Vaults,
+            Vaults,
+            Vaults
+        )
+    {
+        return (Vaults.vault_1, Vaults.vault_2, Vaults.vault_3);
     }
 
-    function setMinStakingAmount(uint256 _minStakingAmount) public onlyOwner {
-        minStakingAmount = _minStakingAmount;
-    }
+    // Stake in Vault
+    function stake(uint256 _amount, Vaults _vault) public {
+        require(
+            (stakedAmountInVault[_vault][msg.sender] + _amount) <=
+                VAULTS[uint256(_vault)].maxStakeAmount,
+            "Stake: Max stake cap reached"
+        );
 
-    function getRewardPercentage() public view returns (uint256) {
-        return rewardPercentage;
-    }
-
-    function setRewardPercentage(uint256 _rewardPercentage) public onlyOwner {
-        rewardPercentage = _rewardPercentage;
-    }
-
-    function getNumerator() public view returns (uint256) {
-        return numerator;
-    }
-
-    function setNumerator(uint256 _numerator) public onlyOwner {
-        numerator = _numerator;
-    }
-
-    function stake(uint256 _amount) public view {
-        require(_amount >= minStakingAmount, "Staking: Too low to Stake");
+        require(
+            Token.balanceOf(msg.sender) >= _amount,
+            "Stake: Insufficient balance"
+        );
         require(
             Token.allowance(msg.sender, address(this)) >= _amount,
-            "Staking: Insufficient Token Allowance"
+            "Stake: Insufficient allowance"
+        );
+        stakeId.increment();
+
+        Token.transferFrom(msg.sender, address(this), _amount);
+        _stakeInVault(msg.sender, _amount, _vault, stakeId.current());
+
+        emit Staked(
+            msg.sender,
+            stakeId.current(),
+            _amount,
+            _vault,
+            block.timestamp
         );
     }
 
-    function unstake() public {}
+    // Staking Reward by Stake Id
+    function getStakingReward(uint256 _stakeId) public view returns (uint256) {
+        return _restakeableRewards(_stakeId);
+    }
 
-    function claimReward() public {}
+    // Restake rewards
+    function restakeRewards(uint256 _stakeId) public nonReentrant {
+        StakeInfo storage _stakeInfo = stakeInfoById[_stakeId];
+        require(
+            _stakeInfo.walletAddress == msg.sender,
+            "Stake: Not the previous staker"
+        );
+        require(!_stakeInfo.unstaked, "Stake: No staked Tokens in the vault");
+        uint256 _amountToRestake = _restakeableRewards(_stakeId);
+
+        require(
+            (stakedAmountInVault[_stakeInfo.vault][msg.sender] +
+                _amountToRestake) <=
+                VAULTS[uint256(_stakeInfo.vault)].maxStakeAmount,
+            "Stake: Max stake cap reached"
+        );
+
+        require(_amountToRestake > 0, "Stake: Insufficient rewards to stake");
+        _stakeInfo.lastClaimedAt = block.timestamp;
+        _stakeInfo.totalClaimed += _amountToRestake;
+
+        stakeId.increment();
+        _stakeInVault(
+            msg.sender,
+            _amountToRestake,
+            _stakeInfo.vault,
+            stakeId.current()
+        );
+
+        emit Restaked(
+            msg.sender,
+            stakeId.current(),
+            _stakeId,
+            _amountToRestake,
+            _stakeInfo.vault,
+            block.timestamp
+        );
+    }
+
+    function unstake(uint256 _stakeId) public nonReentrant {
+        StakeInfo storage _stakeInfo = stakeInfoById[_stakeId];
+        require(
+            _stakeInfo.walletAddress == msg.sender,
+            "Stake: Not the staker"
+        );
+        require(!_stakeInfo.unstaked, "Stake: No staked Tokens in the vault");
+        VaultConfig memory vaultConfig = VAULTS[_stakeId];
+        require(
+            block.timestamp - _stakeInfo.stakedAt >= vaultConfig.cliffInDays,
+            "Stake: Cannot unstake before the cliff"
+        );
+
+        uint256 _rewardAmount = _restakeableRewards(_stakeId);
+        uint256 _amountToTransfer = _stakeInfo.stakedAmount + _rewardAmount;
+
+        _stakeInfo.lastClaimedAt = block.timestamp;
+        _stakeInfo.totalClaimed += _rewardAmount;
+        _stakeInfo.unstaked = true;
+
+        stakedAmountInVault[_stakeInfo.vault][msg.sender] -= _stakeInfo
+            .stakedAmount;
+
+        Token.transfer(msg.sender, _amountToTransfer);
+
+        emit Unstaked(
+            msg.sender,
+            _stakeId,
+            _stakeInfo.stakedAmount,
+            _stakeInfo.totalClaimed,
+            _stakeInfo.vault,
+            block.timestamp
+        );
+    }
+
+    function claimReward(uint256 _stakeId) public {
+        StakeInfo storage _stakeInfo = stakeInfoById[_stakeId];
+        require(
+            _stakeInfo.walletAddress == msg.sender,
+            "Stake: Not the staker"
+        );
+        VaultConfig memory _vault = VAULTS[uint256(_stakeInfo.vault)];
+        require(
+            block.timestamp - _stakeInfo.stakedAt >= _vault.cliffInDays,
+            "Stake: Cannot claim reward before the cliff"
+        );
+        uint256 _claimableAmount = _claimableReward(_stakeInfo, _vault);
+        _stakeInfo.lastClaimedAt = block.timestamp;
+        _stakeInfo.totalClaimed += _claimableAmount;
+
+        emit Claimed(
+            msg.sender,
+            _stakeId,
+            _claimableAmount,
+            _stakeInfo.vault,
+            block.timestamp
+        );
+    }
+
+    function getStakeInfo(address _addr, Vaults _vault)
+        public
+        view
+        returns (StakeInfo[] memory stakeInfos)
+    {
+        uint256[] memory stakeIds = stakeIdsInVault[_vault][_addr];
+        stakeInfos = new StakeInfo[](stakeIds.length);
+
+        for (uint256 i = 0; i < stakeIds.length; i++) {
+            stakeInfos[i] = stakeInfoById[uint256(stakeIds[i])];
+        }
+    }
+
+    function getBalanceInVault(address _addr, Vaults _vault)
+        public
+        view
+        returns (uint256)
+    {
+        return stakedAmountInVault[_vault][_addr];
+    }
 }
