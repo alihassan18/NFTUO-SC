@@ -53,7 +53,7 @@ contract Staking is Ownable, Pausable, Vault, ReentrancyGuard {
     }
 
     // Stake in Vault
-    function stake(uint256 _amount, Vaults _vault) public {
+    function stake(uint256 _amount, Vaults _vault) public whenNotPaused {
         require(
             (stakedAmountInVault[_vault][msg.sender] + _amount) <=
                 VAULTS[uint256(_vault)].maxStakeAmount,
@@ -88,7 +88,11 @@ contract Staking is Ownable, Pausable, Vault, ReentrancyGuard {
     }
 
     // Restake rewards
-    function restakeRewards(uint256 _stakeId) public nonReentrant {
+    function restakeRewards(uint256 _stakeId)
+        public
+        whenNotPaused
+        nonReentrant
+    {
         StakeInfo storage _stakeInfo = stakeInfoById[_stakeId];
         require(
             _stakeInfo.walletAddress == msg.sender,
@@ -126,7 +130,7 @@ contract Staking is Ownable, Pausable, Vault, ReentrancyGuard {
         );
     }
 
-    function unstake(uint256 _stakeId) public nonReentrant {
+    function unstake(uint256 _stakeId) public whenNotPaused nonReentrant {
         StakeInfo storage _stakeInfo = stakeInfoById[_stakeId];
         require(
             _stakeInfo.walletAddress == msg.sender,
@@ -161,7 +165,7 @@ contract Staking is Ownable, Pausable, Vault, ReentrancyGuard {
         );
     }
 
-    function claimReward(uint256 _stakeId) public {
+    function claimReward(uint256 _stakeId) public whenNotPaused nonReentrant {
         StakeInfo storage _stakeInfo = stakeInfoById[_stakeId];
         require(
             _stakeInfo.walletAddress == msg.sender,
