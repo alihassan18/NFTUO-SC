@@ -10,6 +10,13 @@ const ALCHEMY_API_KEY = process.env.ALCHEMY_API_KEY;
 module.exports = {
   solidity: {
     version: "0.8.9",
+    settings: {
+      optimizer: {
+        enabled: true,
+        runs: 200,
+        details: { yul: false },
+      },
+    },
   },
 
   defaultNetwork: "hardhat",
