@@ -10,7 +10,8 @@ const ethers = require("ethers");
 
 ethers.utils.format;
 const NUO_ADDRESS = "0xD5257e9145daa63AA3F2b000a2Eb71098f9FBa94";
-const START_TIME = 1674115200;
+const START_TIME = 1674213329;
+const TRANCHE_TIME_IN_DAYS = 30;
 const CLAIM_PERCENT  = 10;
 const CLAIMS_CAP = 10;
 
@@ -19,6 +20,7 @@ async function main() {
   const airdrop = await Airdrop.deploy(
     NUO_ADDRESS,
     START_TIME,
+    TRANCHE_TIME_IN_DAYS,
     CLAIM_PERCENT,
     CLAIMS_CAP
   );
@@ -33,6 +35,7 @@ async function main() {
     airdrop.address,
     NUO_ADDRESS,
     START_TIME,
+    TRANCHE_TIME_IN_DAYS,
     CLAIM_PERCENT,
     CLAIMS_CAP
   );
