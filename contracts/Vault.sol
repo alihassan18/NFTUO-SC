@@ -30,14 +30,14 @@ abstract contract Vault {
 
     struct VaultConfig {
         uint256 apr;
-        uint256 maxStakeAmount;
+        uint256 maxCap;
         uint256 cliffInDays;
     }
 
     VaultConfig[3] VAULTS;
 
     mapping(Vaults => mapping(address => uint256[])) internal stakeIdsInVault;
-    mapping(Vaults => mapping(address => uint256)) internal stakedAmountInVault;
+    mapping(Vaults => uint256) internal totalStakedInVault;
     mapping(uint256 => StakeInfo) stakeInfoById;
 
     event Staked(
@@ -92,7 +92,7 @@ abstract contract Vault {
             false
         );
 
-        stakedAmountInVault[_vault][_address] += _amount;
+        totalStakedInVault[_vault] += _amount;
     }
 
     function _restakeableRewards(uint256 _stakeId)
