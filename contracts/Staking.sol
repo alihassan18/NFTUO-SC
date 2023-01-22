@@ -55,19 +55,21 @@ contract Staking is Ownable, Pausable, Vault, ReentrancyGuard {
     // Stake in Vault
     function stake(uint256 _amount, Vaults _vault) public whenNotPaused {
         require(
-            (totalStakedInVault[_vault] + _amount) <=
-                VAULTS[uint256(_vault)].maxCap,
-            "Stake: Max stake cap reached"
-        );
-
-        require(
             Token.balanceOf(msg.sender) >= _amount,
             "Stake: Insufficient balance"
         );
+
         require(
             Token.allowance(msg.sender, address(this)) >= _amount,
             "Stake: Insufficient allowance"
         );
+
+        require(
+            (totalStakedInVault[_vault] + _amount) <=
+                VAULTS[uint256(_vault)].maxCap,
+            "Stake: Max stake cap reached"
+        );
+        
         stakeId.increment();
 
         Token.transferFrom(msg.sender, address(this), _amount);
