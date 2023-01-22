@@ -15,9 +15,12 @@ contract Staking is Ownable, Pausable, Vault, ReentrancyGuard {
     Counters.Counter private stakeId;
 
     IERC20 private Token;
+    address private wallet;
 
-    constructor(IERC20 _tokenAddress) {
+    constructor(IERC20 _tokenAddress, address _wallet) {
         Token = _tokenAddress;
+        wallet = _wallet;
+
         VAULTS[0] = VaultConfig(60, 1_000_000_000_000 ether, 365 days);
         VAULTS[1] = VaultConfig(90, 500_000_000_000 ether, 2 * 365 days);
         VAULTS[2] = VaultConfig(120, 500_000_000_000 ether, 3 * 365 days);
@@ -37,6 +40,14 @@ contract Staking is Ownable, Pausable, Vault, ReentrancyGuard {
 
     function setNuoToken(IERC20 _tokenAddr) public onlyOwner {
         Token = _tokenAddr;
+    }
+
+    function getWalletAddress() public view returns (address) {
+        return wallet;
+    }
+
+    function setWalletAddress(address _wallet) public onlyOwner {
+        wallet = _wallet;
     }
 
     // Get all Vaults [enum]
@@ -69,7 +80,7 @@ contract Staking is Ownable, Pausable, Vault, ReentrancyGuard {
                 VAULTS[uint256(_vault)].maxCap,
             "Stake: Max stake cap reached"
         );
-        
+
         stakeId.increment();
 
         Token.transferFrom(msg.sender, address(this), _amount);
@@ -149,7 +160,7 @@ contract Staking is Ownable, Pausable, Vault, ReentrancyGuard {
         // totalStakedInVault[_stakeInfo.vault][msg.sender] -= _stakeInfo
         //     .stakedAmount;
 
-        Token.transfer(msg.sender, _amountToTransfer);
+        Token.transferFrom(wallet, msg.sender, _amountToTransfer);
 
         emit Unstaked(
             msg.sender,
@@ -202,7 +213,7 @@ contract Staking is Ownable, Pausable, Vault, ReentrancyGuard {
         return totalStakedInVault[_vault];
     }
 
-    function withdrawFunds(address _wallet) public onlyOwner {
-        Token.transfer(_wallet, Token.balanceOf(address(this)));
+    function withdrawFunds(address _to) public onlyOwner {
+        Token.transferFrom(wallet, _to, Token.balanceOf(address(this)));
     }
 }
