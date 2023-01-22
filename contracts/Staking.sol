@@ -55,8 +55,8 @@ contract Staking is Ownable, Pausable, Vault, ReentrancyGuard {
     // Stake in Vault
     function stake(uint256 _amount, Vaults _vault) public whenNotPaused {
         require(
-            (stakedAmountInVault[_vault][msg.sender] + _amount) <=
-                VAULTS[uint256(_vault)].maxStakeAmount,
+            (totalStakedInVault[_vault] + _amount) <=
+                VAULTS[uint256(_vault)].maxCap,
             "Stake: Max stake cap reached"
         );
 
@@ -88,7 +88,7 @@ contract Staking is Ownable, Pausable, Vault, ReentrancyGuard {
     }
 
     // Restake rewards
-    function restakeRewards(uint256 _stakeId)
+    function restakeRewards(uint256 _stakeId, Vaults _vault)
         public
         whenNotPaused
         nonReentrant
@@ -102,9 +102,8 @@ contract Staking is Ownable, Pausable, Vault, ReentrancyGuard {
         uint256 _amountToRestake = _restakeableRewards(_stakeId);
 
         require(
-            (stakedAmountInVault[_stakeInfo.vault][msg.sender] +
-                _amountToRestake) <=
-                VAULTS[uint256(_stakeInfo.vault)].maxStakeAmount,
+            (totalStakedInVault[_stakeInfo.vault] + _amountToRestake) <=
+                VAULTS[uint256(_stakeInfo.vault)].maxCap,
             "Stake: Max stake cap reached"
         );
 
@@ -113,19 +112,14 @@ contract Staking is Ownable, Pausable, Vault, ReentrancyGuard {
         _stakeInfo.totalClaimed += _amountToRestake;
 
         stakeId.increment();
-        _stakeInVault(
-            msg.sender,
-            _amountToRestake,
-            _stakeInfo.vault,
-            stakeId.current()
-        );
+        _stakeInVault(msg.sender, _amountToRestake, _vault, stakeId.current());
 
         emit Restaked(
             msg.sender,
             stakeId.current(),
             _stakeId,
             _amountToRestake,
-            _stakeInfo.vault,
+            _vault,
             block.timestamp
         );
     }
@@ -150,8 +144,8 @@ contract Staking is Ownable, Pausable, Vault, ReentrancyGuard {
         _stakeInfo.totalClaimed += _rewardAmount;
         _stakeInfo.unstaked = true;
 
-        stakedAmountInVault[_stakeInfo.vault][msg.sender] -= _stakeInfo
-            .stakedAmount;
+        // totalStakedInVault[_stakeInfo.vault][msg.sender] -= _stakeInfo
+        //     .stakedAmount;
 
         Token.transfer(msg.sender, _amountToTransfer);
 
@@ -202,11 +196,7 @@ contract Staking is Ownable, Pausable, Vault, ReentrancyGuard {
         }
     }
 
-    function getBalanceInVault(address _addr, Vaults _vault)
-        public
-        view
-        returns (uint256)
-    {
-        return stakedAmountInVault[_vault][_addr];
+    function tokensStakedInVault(Vaults _vault) public view returns (uint256) {
+        return totalStakedInVault[_vault];
     }
 }
