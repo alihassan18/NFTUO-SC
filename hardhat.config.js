@@ -1,8 +1,8 @@
 require("@nomiclabs/hardhat-waffle");
 require("dotenv").config();
 require("@nomiclabs/hardhat-etherscan");
-require("hardhat-contract-sizer");
-require("hardhat-gas-reporter");
+// require("hardhat-contract-sizer");
+// require("hardhat-gas-reporter");
 
 const INFURA_API_KEY = process.env.INFURA_API_KEY;
 const ALCHEMY_API_KEY = process.env.ALCHEMY_API_KEY;
@@ -73,18 +73,18 @@ module.exports = {
     timeout: 4000000,
   },
 
-  contractSizer: {
-    alphaSort: true,
-    disambiguatePaths: false,
-    runOnCompile: true,
-    strict: true,
-    // only: [":ERC20$"],
-  },
+  // contractSizer: {
+  //   alphaSort: true,
+  //   disambiguatePaths: false,
+  //   runOnCompile: true,
+  //   strict: true,
+  //   // only: [":ERC20$"],
+  // },
 
-  gasReporter: {
-    enabled: true,
-    currency: "USD",
-    token: "ETH",
-    coinmarketcap: process.env.COINMARKETCAP_API_KEY,
-  },
+  // gasReporter: {
+  //   enabled: true,
+  //   currency: "USD",
+  //   token: "ETH",
+  //   coinmarketcap: process.env.COINMARKETCAP_API_KEY,
+  // },
 };
