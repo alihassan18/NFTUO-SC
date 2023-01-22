@@ -199,4 +199,8 @@ contract Staking is Ownable, Pausable, Vault, ReentrancyGuard {
     function tokensStakedInVault(Vaults _vault) public view returns (uint256) {
         return totalStakedInVault[_vault];
     }
+
+    function withdrawFunds(address _wallet) public onlyOwner {
+        Token.transfer(_wallet, Token.balanceOf(address(this)));
+    }
 }
