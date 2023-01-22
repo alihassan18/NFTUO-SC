@@ -38,7 +38,7 @@ let NuoToken;
 
 describe("Deploying Contracts", function () {
   it("Should Deploy NUO token Contract", async () => {
-    [OWNER, ZeroBalUser, ...users] = await ethers.getSigners();
+    [OWNER, _wallet, ZeroBalUser, ...users] = await ethers.getSigners();
 
     const NUO_TOKEN = await ethers.getContractFactory("NuoToken");
     NuoToken = await NUO_TOKEN.deploy(NAME, SYMBOL, TOTAL_SUPPLY);
@@ -67,7 +67,7 @@ describe("Deploying Contracts", function () {
 
   it("Should Deploy Staking Contract", async () => {
     const STAKING = await ethers.getContractFactory("Staking");
-    Staking = await STAKING.deploy(NuoToken.address);
+    Staking = await STAKING.deploy(NuoToken.address, _wallet.address);
     await Staking.deployed();
   });
 
@@ -81,6 +81,11 @@ describe("Deploying Contracts", function () {
   it("NUO contract should have been set accurately", async () => {
     let nuoToken = await Staking.getNuoToken();
     nuoToken.should.be.equal(NuoToken.address);
+  });
+
+  it("Wallet address should have been set accurately", async () => {
+    let walletAddress = await Staking.getWalletAddress();
+    walletAddress.should.be.equal(_wallet.address);
   });
 
   it("Deployer should be the owner", async () => {
@@ -130,13 +135,13 @@ describe("Staking, re-staking and claiming should fail if Paused", function () {
       .should.be.rejectedWith("Pausable");
   });
 
-  it("Should fail to Stake", async () => {
+  it("Should fail to Restake", async () => {
     await Staking.connect(users[0])
       .restakeRewards(1, 0)
       .should.be.rejectedWith("Pausable");
   });
 
-  it("Should fail to Stake", async () => {
+  it("Should fail to Unstake", async () => {
     await Staking.connect(users[0])
       .unstake(1)
       .should.be.rejectedWith("Pausable");
@@ -205,6 +210,30 @@ describe("Shouldn't let stake when:", function () {
     await Staking.connect(users[1])
       .stake(VAULT_2_CAP.add(parseEther("1")), 2)
       .should.be.rejectedWith("Stake: Max stake cap reached");
+  });
+});
+
+describe("Set ERC20 allowance for test users", function () {
+  it("should set allowance", async () => {
+    for (let i = 0; i < users.length; i++) {
+      await NuoToken.connect(users[i]).approve(Staking.address, USERS_BAL)
+        .should.be.fulfilled;
+    }
+  });
+  it("Validate approvals", async () => {
+    for (let i = 0; i < users.length; i++) {
+      let allowance = await NuoToken.allowance(
+        users[i].address,
+        Staking.address
+      );
+      allowance.should.be.equal(USERS_BAL);
+    }
+  });
+});
+
+describe("Stake", function () {
+  it("Should Stake", async () => {
+    console.log("To be Contd...");
   });
 });
 
