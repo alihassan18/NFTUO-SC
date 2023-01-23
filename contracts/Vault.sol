@@ -102,12 +102,9 @@ abstract contract Vault {
             NUMERATOR) / ONE_YEAR;
 
         uint256 rewardPercentage = totalTime * vault.apr;
-        // console.log("reward", rewardPercentage, "%");
         rewardAmount =
             (stakeInfo.stakedAmount * rewardPercentage) /
             (100 * NUMERATOR);
-        // console.log("stakeInfo.stakedAmount", stakeInfo.stakedAmount);
-        // console.log("rewardAmount", rewardAmount);
     }
 
     function _claimableReward(

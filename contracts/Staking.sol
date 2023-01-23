@@ -10,7 +10,7 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "./Vault.sol";
 import "hardhat/console.sol";
 
-contract Staking is Ownable, Pausable, Vault, ReentrancyGuard {
+contract Staking is Vault, Ownable, Pausable, ReentrancyGuard {
     using Counters for Counters.Counter;
     Counters.Counter private stakeId;
 
@@ -151,9 +151,6 @@ contract Staking is Ownable, Pausable, Vault, ReentrancyGuard {
         _stakeInfo.lastClaimedAt = block.timestamp;
         _stakeInfo.totalClaimed += _rewardAmount;
         _stakeInfo.unstaked = true;
-
-        // totalStakedInVault[_stakeInfo.vault][msg.sender] -= _stakeInfo
-        //     .stakedAmount;
 
         Token.transferFrom(wallet, msg.sender, _amountToTransfer);
 
