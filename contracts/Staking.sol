@@ -209,6 +209,18 @@ contract Staking is Ownable, Pausable, Vault, ReentrancyGuard {
         }
     }
 
+    function getStakeInfoById(uint256 _stakeId)
+        public
+        view
+        returns (StakeInfo memory)
+    {
+        return stakeInfoById[_stakeId];
+    }
+
+    function totalStakes() public view returns (uint256) {
+        return stakeId.current();
+    }
+
     function tokensStakedInVault(Vaults _vault) public view returns (uint256) {
         return totalStakedInVault[_vault];
     }
