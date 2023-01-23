@@ -95,11 +95,6 @@ contract Staking is Ownable, Pausable, Vault, ReentrancyGuard {
         );
     }
 
-    // Staking Reward by Stake Id
-    function getStakingReward(uint256 _stakeId) public view returns (uint256) {
-        return _restakeableRewards(_stakeId);
-    }
-
     // Restake rewards
     function restakeRewards(uint256 _stakeId, Vaults _vault)
         public
@@ -144,7 +139,7 @@ contract Staking is Ownable, Pausable, Vault, ReentrancyGuard {
             "Stake: Not the staker"
         );
         require(!_stakeInfo.unstaked, "Stake: No staked Tokens in the vault");
-        VaultConfig memory vaultConfig = VAULTS[_stakeId];
+        VaultConfig memory vaultConfig = VAULTS[uint256(_stakeInfo.vault)];
         require(
             block.timestamp - _stakeInfo.stakedAt >= vaultConfig.cliffInDays,
             "Stake: Cannot unstake before the cliff"
@@ -194,6 +189,11 @@ contract Staking is Ownable, Pausable, Vault, ReentrancyGuard {
             _stakeInfo.vault,
             block.timestamp
         );
+    }
+
+    // Staking Reward by Stake Id
+    function getStakingReward(uint256 _stakeId) public view returns (uint256) {
+        return _restakeableRewards(_stakeId);
     }
 
     function getStakeInfo(address _addr, Vaults _vault)
