@@ -74,6 +74,14 @@ contract Staking is Vault, Ownable, Pausable, ReentrancyGuard {
         return (Vaults.vault_1, Vaults.vault_2, Vaults.vault_3);
     }
 
+    function getVaultConfiguration(Vaults _vault)
+        public
+        view
+        returns (VaultConfig memory)
+    {
+        return VAULTS[uint256(_vault)];
+    }
+
     // Stake in Vault
     function stake(uint256 _amount, Vaults _vault) public whenNotPaused {
         require(
