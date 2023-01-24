@@ -47,6 +47,9 @@ const AMOUNT_TO_STAKE = parseEther((1_000).toString());
 let STAKE_ID = 0;
 
 const ONE_MONTH = 30 * 24 * 60 * 60;
+const ONE_DAY = 24 * 60 * 60;
+const ONE_YEAR = ONE_MONTH * 12 + ONE_DAY * 5;
+
 let Vaults = [];
 
 let Staking;
@@ -172,12 +175,15 @@ describe("Staking, re-staking and claiming should fail if Paused", function () {
 
 describe("Distribute NUO token for test accounts and update balances", function () {
   it("Should transfer tokens to all test accounts", async () => {
+    await NuoToken.transfer(_wallet.address, USERS_BAL);
     for (let i = 0; i < users.length; i++) {
       await NuoToken.transfer(users[i].address, USERS_BAL);
     }
   });
 
   it("Users should have accurate NUO token balance to stake", async () => {
+    let walletBal = await NuoToken.balanceOf(_wallet.address);
+    walletBal.should.be.equal(USERS_BAL);
     for (let i = 0; i < users.length; i++) {
       let userBal = await NuoToken.balanceOf(users[i].address);
       userBal.should.be.equal(USERS_BAL);
@@ -231,12 +237,20 @@ describe("Shouldn't let stake when:", function () {
 
 describe("Set ERC20 allowance for test users", function () {
   it("should set allowance", async () => {
+    await NuoToken.connect(_wallet).approve(Staking.address, USERS_BAL);
+
     for (let i = 0; i < users.length; i++) {
       await NuoToken.connect(users[i]).approve(Staking.address, USERS_BAL)
         .should.be.fulfilled;
     }
   });
   it("Validate approvals", async () => {
+    let walletAllowance = await NuoToken.allowance(
+      _wallet.address,
+      Staking.address
+    );
+    walletAllowance.should.be.equal(USERS_BAL);
+
     for (let i = 0; i < users.length; i++) {
       let allowance = await NuoToken.allowance(
         users[i].address,
@@ -476,13 +490,197 @@ describe("Shouldn't Claim when", function () {
   });
 });
 
-describe("Restakeable rewards", function () {
-  it("Should restake successfully", async () => {
-    await ethers.provider.send("evm_increaseTime", [ONE_MONTH]);
+describe("After 1 year of staking", function () {
+  let reward;
+
+  it("Vault_1 users should be able to claim their rewards", async () => {
+    await ethers.provider.send("evm_increaseTime", [ONE_YEAR]);
     await ethers.provider.send("evm_mine");
 
-    let reward = await Staking.getStakingReward(1);
-    console.log(formatEther(reward));
+    reward = await Staking.getClaimableTokens(1);
+    for (let i = 0; i < 5; i++) {
+      await Staking.connect(users[i]).claimReward(i + 1);
+    }
+  });
+
+  it("Vault_1 users should be able to unstake", async () => {
+    for (let i = 0; i < 5; i++) {
+      await Staking.connect(users[i]).unstake(i + 1);
+    }
+  });
+
+  it("Stake info should have updated accordingly", async () => {
+    for (let i = 0; i < 5; i++) {
+      let {
+        walletAddress,
+        stakeId,
+        stakedAmount,
+        totalClaimed,
+        vault,
+        unstaked,
+      } = await Staking.getStakeInfoById(i + 1);
+      walletAddress.should.be.equal(users[i].address);
+      stakeId.should.be.equal(i + 1);
+      stakedAmount.should.be.equal(AMOUNT_TO_STAKE);
+      totalClaimed.should.be.equal(reward);
+      vault.should.be.equal(0);
+      unstaked.should.be.equal(true);
+    }
+  });
+
+  it("Should fail when someone tries to unstake, already unstaked tokens", async () => {
+    for (let i = 0; i < 5; i++) {
+      await Staking.connect(users[i])
+        .unstake(i + 1)
+        .should.be.rejectedWith("Stake: No staked Tokens in the vault");
+    }
+  });
+
+  it("should fail to unstake from Vault_2", async () => {
+    for (let i = 5; i < 11; i++) {
+      await Staking.connect(users[i])
+        .unstake(i + 1)
+        .should.be.rejectedWith("Stake: Cannot unstake before the cliff");
+    }
+  });
+
+  it("should fail to unstake from Vault_3", async () => {
+    for (let i = 11; i < users.length; i++) {
+      await Staking.connect(users[i])
+        .unstake(i + 1)
+        .should.be.rejectedWith("Stake: Cannot unstake before the cliff");
+    }
+  });
+
+  it("Should have updated users balances accurately", async () => {
+    for (let i = 0; i < 5; i++) {
+      let userBal = await NuoToken.balanceOf(users[i].address);
+      userBal.should.be.equal(USERS_BAL.add(reward));
+    }
+  });
+});
+
+describe("After 2 years of staking", function () {
+  let reward;
+
+  it("Vault_2 users should be able to claim their rewards", async () => {
+    await ethers.provider.send("evm_increaseTime", [ONE_YEAR]);
+    await ethers.provider.send("evm_mine");
+
+    reward = await Staking.getClaimableTokens(6);
+    for (let i = 5; i < 11; i++) {
+      await Staking.connect(users[i]).claimReward(i + 1);
+    }
+  });
+
+  it("Vault_2 users should be able to unstake", async () => {
+    // reward = await Staking.getClaimableTokens(6);
+
+    for (let i = 5; i < 11; i++) {
+      await Staking.connect(users[i]).unstake(i + 1);
+    }
+  });
+
+  it("Stake info should have updated accordingly", async () => {
+    for (let i = 5; i < 11; i++) {
+      let {
+        walletAddress,
+        stakeId,
+        stakedAmount,
+        totalClaimed,
+        vault,
+        unstaked,
+      } = await Staking.getStakeInfoById(i + 1);
+      walletAddress.should.be.equal(users[i].address);
+      stakeId.should.be.equal(i + 1);
+      stakedAmount.should.be.equal(AMOUNT_TO_STAKE);
+      totalClaimed.should.be.equal(reward);
+      vault.should.be.equal(1);
+      unstaked.should.be.equal(true);
+    }
+  });
+
+  it("Should fail when someone tries to unstake, already unstaked tokens", async () => {
+    for (let i = 0; i < 11; i++) {
+      await Staking.connect(users[i])
+        .unstake(i + 1)
+        .should.be.rejectedWith("Stake: No staked Tokens in the vault");
+    }
+  });
+
+  it("should fail to unstake from Vault_3", async () => {
+    for (let i = 11; i < users.length; i++) {
+      await Staking.connect(users[i])
+        .unstake(i + 1)
+        .should.be.rejectedWith("Stake: Cannot unstake before the cliff");
+    }
+  });
+
+  it("Should have updated users balances accurately", async () => {
+    for (let i = 5; i < 11; i++) {
+      let userBal = await NuoToken.balanceOf(users[i].address);
+      userBal.should.be.equal(USERS_BAL.add(reward));
+    }
+  });
+});
+
+describe("After 3 years of staking", function () {
+  let reward;
+  it("Vault_1 users should be able to claim their rewards", async () => {
+    await ethers.provider.send("evm_increaseTime", [ONE_YEAR]);
+    await ethers.provider.send("evm_mine");
+
+    reward = await Staking.getClaimableTokens(12);
+    for (let i = 11; i < users.length; i++) {
+      await Staking.connect(users[i]).claimReward(i + 1);
+    }
+  });
+  it("Vault_3 users should be able to unstake with reward", async () => {
+
+    for (let i = 11; i < users.length; i++) {
+      await Staking.connect(users[i]).unstake(i + 1);
+    }
+  });
+
+  it("Stake info should have updated accordingly", async () => {
+    for (let i = 11; i < users.length; i++) {
+      let {
+        walletAddress,
+        stakeId,
+        stakedAmount,
+        totalClaimed,
+        vault,
+        unstaked,
+      } = await Staking.getStakeInfoById(i + 1);
+      walletAddress.should.be.equal(users[i].address);
+      stakeId.should.be.equal(i + 1);
+      stakedAmount.should.be.equal(AMOUNT_TO_STAKE);
+      totalClaimed.should.be.equal(reward);
+      vault.should.be.equal(2);
+      unstaked.should.be.equal(true);
+    }
+  });
+
+  it("Should fail when someone tries to unstake, already unstaked tokens", async () => {
+    for (let i = 0; i < users.length; i++) {
+      await Staking.connect(users[i])
+        .unstake(i + 1)
+        .should.be.rejectedWith("Stake: No staked Tokens in the vault");
+    }
+  });
+
+  it("Should have updated users balances accurately", async () => {
+    for (let i = 11; i < users.length; i++) {
+      let userBal = await NuoToken.balanceOf(users[i].address);
+      userBal.should.be.equal(USERS_BAL.add(reward));
+    }
+  });
+});
+
+describe("Validate wallet balance", function () {
+  it("Should have accurate balance", async () => {
+    let addrBal = await NuoToken.balanceOf(_wallet.address);
+    console.log(formatEther(addrBal));
   });
 });
 
@@ -520,7 +718,7 @@ describe("Restakeable rewards", function () {
 //   })
 //   it("Should get expected results", async () => {
 
-//     // let stakingReward = await Staking.getStakingReward(1);
+//     // let stakingReward = await Staking.getClaimableTokens(1);
 
 //   })
 
@@ -533,8 +731,8 @@ describe("Restakeable rewards", function () {
 //     await ethers.provider.send("evm_increaseTime", [MONTHS_6]);
 //     await ethers.provider.send("evm_mine");
 
-//     let stakingReward1 = await Staking.getStakingReward(1);
-//     let stakingReward2 = await Staking.getStakingReward(2);
+//     let stakingReward1 = await Staking.getClaimableTokens(1);
+//     let stakingReward2 = await Staking.getClaimableTokens(2);
 //     console.log("staking reward 1", stakingReward1);
 //     console.log("staking reward 2", stakingReward2);
 
