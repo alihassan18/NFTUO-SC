@@ -8,7 +8,6 @@ import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 import "./Vault.sol";
-import "hardhat/console.sol";
 
 contract Staking is Vault, Ownable, Pausable, ReentrancyGuard {
     using Counters for Counters.Counter;

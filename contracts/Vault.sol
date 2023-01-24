@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "hardhat/console.sol";
-
 abstract contract Vault {
     uint256 constant NUMERATOR = 1000;
     uint256 constant ONE_YEAR = 365 days;
