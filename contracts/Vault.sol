@@ -110,8 +110,10 @@ abstract contract Vault {
     function _claimableReward(
         StakeInfo memory _stakeInfo,
         VaultConfig memory _vault
-    ) internal pure returns (uint256 claimableAmount) {
-        uint256 _reward = (_stakeInfo.stakedAmount * _vault.apr) / 100;
+    ) internal view returns (uint256 claimableAmount, uint256 numOfYears) {
+        uint256 oneYearReward = (_stakeInfo.stakedAmount * _vault.apr) / 100;
+        numOfYears = (block.timestamp - _stakeInfo.lastClaimedAt) / ONE_YEAR;
+        uint256 _reward = oneYearReward * numOfYears;
         claimableAmount = _reward - _stakeInfo.totalClaimed;
     }
 }

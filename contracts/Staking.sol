@@ -21,9 +21,21 @@ contract Staking is Vault, Ownable, Pausable, ReentrancyGuard {
         Token = _tokenAddress;
         wallet = _wallet;
 
-        VAULTS[0] = VaultConfig(60, 1_000_000_000_000 ether, 365 days);
-        VAULTS[1] = VaultConfig(90, 500_000_000_000 ether, 2 * 365 days);
-        VAULTS[2] = VaultConfig(120, 500_000_000_000 ether, 3 * 365 days);
+        VAULTS[uint256(Vaults.vault_1)] = VaultConfig(
+            60,
+            1_000_000_000_000 ether,
+            365 days
+        );
+        VAULTS[uint256(Vaults.vault_2)] = VaultConfig(
+            90,
+            500_000_000_000 ether,
+            2 * 365 days
+        );
+        VAULTS[uint256(Vaults.vault_3)] = VaultConfig(
+            120,
+            500_000_000_000 ether,
+            3 * 365 days
+        );
     }
 
     function pause() public onlyOwner {
@@ -166,18 +178,33 @@ contract Staking is Vault, Ownable, Pausable, ReentrancyGuard {
 
     function claimReward(uint256 _stakeId) public whenNotPaused nonReentrant {
         StakeInfo storage _stakeInfo = stakeInfoById[_stakeId];
+
         require(
             _stakeInfo.walletAddress == msg.sender,
             "Stake: Not the staker"
         );
+
         VaultConfig memory _vault = VAULTS[uint256(_stakeInfo.vault)];
         require(
             block.timestamp - _stakeInfo.stakedAt >= _vault.cliffInDays,
             "Stake: Cannot claim reward before the cliff"
         );
-        uint256 _claimableAmount = _claimableReward(_stakeInfo, _vault);
-        _stakeInfo.lastClaimedAt = block.timestamp;
+
+        (uint256 _claimableAmount, uint256 numOfYears) = _claimableReward(
+            _stakeInfo,
+            _vault
+        );
+
+        require(
+            _claimableAmount > 0 && numOfYears > 0,
+            "Stake: No Claims available"
+        );
+
+        _stakeInfo.lastClaimedAt = (_stakeInfo.lastClaimedAt +
+            (ONE_YEAR * numOfYears));
         _stakeInfo.totalClaimed += _claimableAmount;
+
+        Token.transferFrom(wallet, msg.sender, _claimableAmount);
 
         emit Claimed(
             msg.sender,
@@ -186,6 +213,17 @@ contract Staking is Vault, Ownable, Pausable, ReentrancyGuard {
             _stakeInfo.vault,
             block.timestamp
         );
+    }
+
+    function getClaimableTokens(uint256 _stakeId)
+        public
+        view
+        returns (uint256)
+    {
+        StakeInfo memory _stakeInfo = stakeInfoById[_stakeId];
+        VaultConfig memory _vault = VAULTS[uint256(_stakeInfo.vault)];
+        (uint256 claimableAmount, ) = _claimableReward(_stakeInfo, _vault);
+        return claimableAmount;
     }
 
     // Staking Reward by Stake Id
