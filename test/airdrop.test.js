@@ -25,7 +25,7 @@ const NAME = "NUO Token";
 const SYMBOL = "NUO";
 const TOTAL_SUPPLY = 1_000_000_000_000;
 
-const START_DATE = 1672727908;
+const START_DATE = 1674642647;
 const TRANCHE_IN_DAYS = 30;
 const CLAIM_PERCENTAGE = 10;
 const CLAIMS_CAP = 10;
@@ -219,6 +219,8 @@ describe("Time Travel 📆 and Claim Successfully ✅", function () {
   it("Should claim after each 30 days for 10 times", async () => {
     for (let i = 0; i < 10; i++) {
       await ethers.provider.send("evm_increaseTime", [DAYS_30]);
+      await ethers.provider.send("evm_mine");
+
       for (let j = 0; j < 10; j++) {
         await Airdrop.connect(rest[j]).claim().should.be.fulfilled;
       }
