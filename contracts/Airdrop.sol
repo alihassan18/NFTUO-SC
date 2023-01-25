@@ -5,8 +5,17 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+
+import "../interfaces/IStaking.sol";
 
 contract Airdrop is Ownable, Pausable {
+    enum Vaults {
+        vault_1,
+        vault_2,
+        vault_3
+    }
+
     struct VestInfo {
         uint256 totalVestedAmount;
         uint256 lastClaimedAt;
@@ -20,6 +29,7 @@ contract Airdrop is Ownable, Pausable {
     uint256 private immutable claimPercentage;
     uint256 private immutable claimsCap;
 
+    IStaking private StakingContract;
     uint256 private totalTokenReleased;
     uint256 private expectedTokensAmount;
 
@@ -33,14 +43,23 @@ contract Airdrop is Ownable, Pausable {
         uint256 claimedAt
     );
 
+    event Staked(
+        address indexed walletAddress,
+        uint256 amount,
+        uint256 stakedAt,
+        address stakingContract
+    );
+
     constructor(
         IERC20 _nuoToken,
+        IStaking _stakingContract,
         uint256 _startTime,
         uint256 _trancheTimeInDays,
         uint256 _claimPercentage,
         uint256 _numOfClaims
     ) {
         NuoToken = _nuoToken;
+        StakingContract = _stakingContract;
         startTime = _startTime;
         trancheInDays = _trancheTimeInDays;
         claimPercentage = _claimPercentage;
@@ -59,6 +78,14 @@ contract Airdrop is Ownable, Pausable {
         _unpause();
     }
 
+    function getStakingContract() public view returns (IStaking) {
+        return StakingContract;
+    }
+
+    function setStakingContract(IStaking _stakingContract) public onlyOwner {
+        StakingContract = _stakingContract;
+    }
+
     function whitelistAddresses(
         address[] memory _addresses,
         uint256[] memory _amounts
@@ -73,7 +100,6 @@ contract Airdrop is Ownable, Pausable {
                 _addresses[i] != address(0),
                 "Airdrop: Address cannot be zero address"
             );
-            require(_amounts[i] > 0, "Airdrop: Amount cannot be zero");
             vestInfoByAddress[_addresses[i]] = VestInfo(
                 _amounts[i],
                 startTime,
@@ -94,7 +120,7 @@ contract Airdrop is Ownable, Pausable {
     }
 
     function claim() public whenNotPaused {
-        require(block.timestamp >= startTime, "Airdrop: It's too early");
+        require(block.timestamp >= startTime, "Airdrop: Too early!");
         VestInfo memory _vestInfo = vestInfoByAddress[msg.sender];
         require(
             _vestInfo.totalVestedAmount > 0 && _vestInfo.claimsCount < 10,
@@ -115,6 +141,36 @@ contract Airdrop is Ownable, Pausable {
         totalTokenReleased += _totalClaimableAmount;
 
         emit Claimed(msg.sender, _totalClaimableAmount, block.timestamp);
+    }
+
+    function stake(IStaking.Vaults _vault) public whenNotPaused {
+        require(block.timestamp >= startTime, "Airdrop: Too early!");
+        VestInfo memory _vestInfo = vestInfoByAddress[msg.sender];
+        require(
+            _vestInfo.totalVestedAmount > 0 && _vestInfo.claimsCount < 10,
+            "Airdrop: No Claim(s) Available"
+        );
+        (
+            uint256 _totalClaimableAmount,
+            uint256 _mod,
+            uint256 _claimsCount
+        ) = _calculateClaimableAmount(_vestInfo);
+
+        NuoToken.transfer(address(StakingContract), _totalClaimableAmount);
+        StakingContract.stake(msg.sender, _totalClaimableAmount, _vault);
+
+        _vestInfo.lastClaimedAt = block.timestamp - _mod;
+        _vestInfo.claimsCount += _claimsCount;
+        _vestInfo.totalClaimed += _totalClaimableAmount;
+        vestInfoByAddress[msg.sender] = _vestInfo;
+        totalTokenReleased += _totalClaimableAmount;
+
+        emit Staked(
+            msg.sender,
+            _totalClaimableAmount,
+            block.timestamp,
+            address(this)
+        );
     }
 
     function _calculateClaimableAmount(VestInfo memory _vestInfo)
