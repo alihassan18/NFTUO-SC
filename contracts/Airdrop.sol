@@ -61,7 +61,7 @@ contract Airdrop is Ownable, Pausable {
         NuoToken = _nuoToken;
         StakingContract = _stakingContract;
         startTime = _startTime;
-        trancheInDays = _trancheTimeInDays;
+        trancheInDays = _trancheTimeInDays * 1 days;
         claimPercentage = _claimPercentage;
         claimsCap = _numOfClaims;
     }
