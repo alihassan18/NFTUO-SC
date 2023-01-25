@@ -11,10 +11,15 @@ const ethers = require("ethers");
 ethers.utils.format;
 const NUO_ADDRESS = "0xD5257e9145daa63AA3F2b000a2Eb71098f9FBa94";
 const WALLET = "0xE1043012936b8a877D37bd64839544204638d035";
+const AIRDROP_CONTRACT_ADDRESS = "0xD5257e9145daa63AA3F2b000a2Eb71098f9FBa94";
 
 async function main() {
   const Staking = await hre.ethers.getContractFactory("Staking");
-  const staking = await Staking.deploy(NUO_ADDRESS, WALLET);
+  const staking = await Staking.deploy(
+    NUO_ADDRESS,
+    WALLET,
+    AIRDROP_CONTRACT_ADDRESS
+  );
 
   await staking.deployed();
 
@@ -25,7 +30,8 @@ async function main() {
     "npx hardhat verify --network goerli",
     staking.address,
     NUO_ADDRESS,
-    WALLET
+    WALLET,
+    AIRDROP_CONTRACT_ADDRESS
   );
 }
 
