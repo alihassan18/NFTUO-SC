@@ -77,6 +77,7 @@ describe("Deploying Contracts", function () {
     const AIRDROP = await ethers.getContractFactory("Airdrop");
     Airdrop = await AIRDROP.deploy(
       NuoToken.address,
+      NuoToken.address,
       START_DATE,
       TRANCHE_IN_DAYS,
       CLAIM_PERCENTAGE,
@@ -271,11 +272,11 @@ describe("Balances after claim", function () {
 });
 
 describe("Expected funds-in-contract required should now be zero", function () {
-  it("Should return Zero", async ()=> {
-    let expectedFundsRequired = await Airdrop.fundsRequiredInContract()
-    expectedFundsRequired.should.be.equal(parseEther('0'));
-  })
-})
+  it("Should return Zero", async () => {
+    let expectedFundsRequired = await Airdrop.fundsRequiredInContract();
+    expectedFundsRequired.should.be.equal(parseEther("0"));
+  });
+});
 
 // it("Should should fail before 1 month", async () => {
 //   console.log(
