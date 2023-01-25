@@ -24,7 +24,6 @@ contract Airdrop is Ownable, Pausable {
     uint256 private expectedTokensAmount;
 
     address[] private whitelistedAddresses;
-    address[] private blacklistedAddresses;
 
     mapping(address => VestInfo) private vestInfoByAddress;
 
