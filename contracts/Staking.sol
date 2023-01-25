@@ -16,9 +16,16 @@ contract Staking is Vault, Ownable, Pausable, ReentrancyGuard {
     IERC20 private Token;
     address private wallet;
 
-    constructor(IERC20 _tokenAddress, address _wallet) {
+    address private airdropContractAddress;
+
+    constructor(
+        IERC20 _tokenAddress,
+        address _wallet,
+        address _airdropAddress
+    ) {
         Token = _tokenAddress;
         wallet = _wallet;
+        airdropContractAddress = _airdropAddress;
 
         VAULTS[uint256(Vaults.vault_1)] = VaultConfig(
             60,
@@ -35,6 +42,11 @@ contract Staking is Vault, Ownable, Pausable, ReentrancyGuard {
             500_000_000_000 ether,
             3 * 365 days
         );
+    }
+
+    modifier onlyAirdropContract() {
+        require(msg.sender == airdropContractAddress, "Stake: Invalid sender");
+        _;
     }
 
     function pause() public onlyOwner {
@@ -59,6 +71,17 @@ contract Staking is Vault, Ownable, Pausable, ReentrancyGuard {
 
     function setWalletAddress(address _wallet) public onlyOwner {
         wallet = _wallet;
+    }
+
+    function getAirdropContractAddress() public view returns (address) {
+        return airdropContractAddress;
+    }
+
+    function setAirdropContractAddress(address _airdropContractAddress)
+        public
+        onlyOwner
+    {
+        airdropContractAddress = _airdropContractAddress;
     }
 
     // Get all Vaults [enum]
@@ -107,6 +130,29 @@ contract Staking is Vault, Ownable, Pausable, ReentrancyGuard {
 
         emit Staked(
             msg.sender,
+            stakeId.current(),
+            _amount,
+            _vault,
+            block.timestamp
+        );
+    }
+
+    function stakeByContract(
+        address _sender,
+        uint256 _amount,
+        Vaults _vault
+    ) external onlyAirdropContract {
+        require(
+            (totalStakedInVault[_vault] + _amount) <=
+                VAULTS[uint256(_vault)].maxCap,
+            "Stake: Max stake cap reached"
+        );
+
+        stakeId.increment();
+        _stakeInVault(_sender, _amount, _vault, stakeId.current());
+
+        emit Staked(
+            _sender,
             stakeId.current(),
             _amount,
             _vault,
