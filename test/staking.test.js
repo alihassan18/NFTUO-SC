@@ -86,7 +86,11 @@ describe("Deploying Contracts", function () {
 
   it("Should Deploy Staking Contract", async () => {
     const STAKING = await ethers.getContractFactory("Staking");
-    Staking = await STAKING.deploy(NuoToken.address, _wallet.address);
+    Staking = await STAKING.deploy(
+      NuoToken.address,
+      _wallet.address,
+      _wallet.address
+    );
     await Staking.deployed();
   });
 
@@ -636,7 +640,6 @@ describe("After 3 years of staking", function () {
     }
   });
   it("Vault_3 users should be able to unstake with reward", async () => {
-
     for (let i = 11; i < users.length; i++) {
       await Staking.connect(users[i]).unstake(i + 1);
     }
