@@ -630,7 +630,7 @@ describe("After 2 years of staking", function () {
 
 describe("After 3 years of staking", function () {
   let reward;
-  it("Vault_1 users should be able to claim their rewards", async () => {
+  it("Vault_3 users should be able to claim their rewards", async () => {
     await ethers.provider.send("evm_increaseTime", [ONE_YEAR]);
     await ethers.provider.send("evm_mine");
 
@@ -683,7 +683,39 @@ describe("After 3 years of staking", function () {
 describe("Validate wallet balance", function () {
   it("Should have accurate balance", async () => {
     let addrBal = await NuoToken.balanceOf(_wallet.address);
-    console.log(formatEther(addrBal));
+    // console.log(formatEther(addrBal));
+  });
+});
+
+describe("Re-claim", function () {
+  it("After another 2 years - it should behave expectedly", async () => {
+    await ethers.provider.send("evm_increaseTime", [ONE_YEAR * 2]);
+    await ethers.provider.send("evm_mine");
+  });
+
+  it("Should be all zeros", async () => {
+    for (let i = 0; i < users.length; i++) {
+      let claimable = await Staking.getClaimableTokens(i + 1);
+      let stakingReward = await Staking.getStakingReward(i + 1);
+      // console.log("claimable", claimable);
+      // console.log("stakingReward", stakingReward);
+    }
+  });
+  it("Should fail to reclaim once all tokens are claimed", async () => {
+    for (let i = 0; i < users.length; i++) {
+      await Staking.connect(users[i])
+        .claimReward(i + 1)
+        .should.be.rejectedWith("Stake: No Claims available");
+    }
+  });
+
+  it("Claimable reward should be zero", async () => {
+    for (let i = 0; i < users.length; i++) {
+      let claimableReward = await Staking.connect(users[i]).getStakingReward(
+        i + 1
+      );
+      claimableReward.should.be.equal(0);
+    }
   });
 });
 
