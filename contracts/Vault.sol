@@ -96,8 +96,17 @@ abstract contract Vault {
     {
         StakeInfo memory stakeInfo = stakeInfoById[_stakeId];
         VaultConfig memory vault = VAULTS[uint256(stakeInfo.vault)];
-        uint256 totalTime = ((block.timestamp - stakeInfo.lastClaimedAt) *
-            NUMERATOR) / ONE_YEAR;
+        uint256 endTime = block.timestamp >
+            (stakeInfo.stakedAt + vault.cliffInDays)
+            ? stakeInfo.stakedAt + vault.cliffInDays
+            : block.timestamp;
+
+        if (endTime < stakeInfo.lastClaimedAt) {
+            return (0);
+        }
+
+        uint256 totalTime = ((endTime - stakeInfo.lastClaimedAt) * NUMERATOR) /
+            ONE_YEAR;
 
         uint256 rewardPercentage = totalTime * vault.apr;
         rewardAmount =
@@ -110,6 +119,14 @@ abstract contract Vault {
         VaultConfig memory _vault
     ) internal view returns (uint256 claimableAmount, uint256 numOfYears) {
         uint256 oneYearReward = (_stakeInfo.stakedAmount * _vault.apr) / 100;
+        uint256 endTime = block.timestamp >
+            (_stakeInfo.stakedAt + _vault.cliffInDays)
+            ? _stakeInfo.stakedAt + _vault.cliffInDays
+            : block.timestamp;
+
+        if (endTime < _stakeInfo.lastClaimedAt) {
+            return (0, 0);
+        }
         numOfYears = (block.timestamp - _stakeInfo.lastClaimedAt) / ONE_YEAR;
         uint256 _reward = oneYearReward * numOfYears;
         claimableAmount = _reward - _stakeInfo.totalClaimed;
