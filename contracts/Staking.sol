@@ -23,6 +23,9 @@ contract Staking is Vault, Ownable, Pausable, ReentrancyGuard {
         address _wallet,
         address _airdropAddress
     ) {
+        require(_wallet != address(0), "Stake: Invalid address");
+        require(_airdropAddress != address(0), "Stake: Invalid address");
+
         Token = _tokenAddress;
         wallet = _wallet;
         airdropContractAddress = _airdropAddress;
