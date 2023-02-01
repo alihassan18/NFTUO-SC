@@ -62,6 +62,7 @@ contract Staking is Vault, Ownable, Pausable, ReentrancyGuard {
     }
 
     function setNuoToken(IERC20 _tokenAddr) public onlyOwner {
+        require(address(_tokenAddr) != address(0), "Stake: Invalid address");
         Token = _tokenAddr;
     }
 
@@ -70,6 +71,7 @@ contract Staking is Vault, Ownable, Pausable, ReentrancyGuard {
     }
 
     function setWalletAddress(address _wallet) public onlyOwner {
+        require(_wallet != address(0), "Stake: Invalid address");
         wallet = _wallet;
     }
 
@@ -81,6 +83,11 @@ contract Staking is Vault, Ownable, Pausable, ReentrancyGuard {
         public
         onlyOwner
     {
+        require(
+            address(_airdropContractAddress) != address(0),
+            "Stake: Invalid address"
+        );
+
         airdropContractAddress = _airdropContractAddress;
     }
 

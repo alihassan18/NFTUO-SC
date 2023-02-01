@@ -83,6 +83,10 @@ contract Airdrop is Ownable, Pausable {
     }
 
     function setStakingContract(IStaking _stakingContract) public onlyOwner {
+        require(
+            address(_stakingContract) != address(0),
+            "Stake: Invalid address"
+        );
         StakingContract = _stakingContract;
     }
 
