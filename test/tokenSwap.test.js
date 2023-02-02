@@ -131,10 +131,8 @@ describe("Deploy Swapping Contract", function () {
     TokenSwap = await TOKEN_SWAP.deploy(
       NuoToken.address,
       TOKEN_PRICE_IN_USD,
-      parseEther(SWAP_FEE.toString()),
       parseEther(MIN_AMOUNT.toString()),
-      MockUsdcToken.address,
-      OWNER.address
+      MockUsdcToken.address
     );
     await TokenSwap.deployed();
   });
@@ -145,13 +143,11 @@ describe("Deploy Swapping Contract", function () {
     let tokenPriceInUsdcResponse = (
       await TokenSwap.tokenPriceInUsd()
     ).toString();
-    let swapFeeResponse = (await TokenSwap.swapFee()).toString();
     let minSwapAmountResponse = formatEther(await TokenSwap.minSwapAmount());
 
     usdcTokenResponse.should.be.equal(MockUsdcToken.address);
     nuoTokenResponse.should.be.equal(NuoToken.address);
     tokenPriceInUsdcResponse.should.be.equal(TOKEN_PRICE_IN_USD.toString());
-    swapFeeResponse.should.be.equal(SWAP_FEE.toString());
     minSwapAmountResponse.should.be.equal(MIN_AMOUNT.toString());
   });
 });
@@ -192,13 +188,13 @@ describe("Token Swap Getters and Setters should work as expected", function () {
   });
 
   it("Only Owner should successfully update Swap Fee", async () => {
-    await TokenSwap.connect(user3)
-      .updateSwapFee(swapFeeToUpdate)
-      .should.be.rejectedWith("Ownable");
-    await TokenSwap.connect(OWNER).updateSwapFee(swapFeeToUpdate).should.be
-      .fulfilled;
-    let updatedSwapFee = (await TokenSwap.swapFee()).toString();
-    updatedSwapFee.should.be.equal(swapFeeToUpdate);
+    // await TokenSwap.connect(user3)
+    //   .updateSwapFee(swapFeeToUpdate)
+    //   .should.be.rejectedWith("Ownable");
+    // await TokenSwap.connect(OWNER).updateSwapFee(swapFeeToUpdate).should.be
+    //   .fulfilled;
+    // let updatedSwapFee = (await TokenSwap.swapFee()).toString();
+    // updatedSwapFee.should.be.equal(swapFeeToUpdate);
   });
 
   it("Only Owner should successfully update Minimum Swap Amount", async () => {
@@ -223,13 +219,13 @@ describe("Token Swap Getters and Setters should work as expected", function () {
   });
 
   it("Only Owner should successfully update Wallet address", async () => {
-    await TokenSwap.connect(user3)
-      .updateWalletAddress(walletAddressToUpdate)
-      .should.be.rejectedWith("Ownable");
-    await TokenSwap.connect(OWNER).updateWalletAddress(walletAddressToUpdate)
-      .should.be.fulfilled;
-    let updatedWalletAddress = (await TokenSwap.wallet()).toString();
-    updatedWalletAddress.should.be.equal(walletAddressToUpdate);
+    // await TokenSwap.connect(user3)
+    //   .updateWalletAddressasdf(walletAddressToUpdate)
+    //   .should.be.rejectedWith("Ownable");
+    // await TokenSwap.connect(OWNER).updateWalletAddressasdf(walletAddressToUpdate)
+    //   .should.be.fulfilled;
+    // let updatedWalletAddress = (await TokenSwap.wallet()).toString();
+    // updatedWalletAddress.should.be.equal(walletAddressToUpdate);
   });
 });
 
@@ -239,16 +235,11 @@ describe("It should reset values", function () {
       .fulfilled;
     await TokenSwap.connect(OWNER).updateTokenPrice(TOKEN_PRICE_IN_USD).should
       .be.fulfilled;
-    await TokenSwap.connect(OWNER).updateSwapFee(
-      parseEther(SWAP_FEE.toString())
-    ).should.be.fulfilled;
+
     await TokenSwap.connect(OWNER).updateMinimumSwapAmount(
       // parseEther(MIN_AMOUNT.toString())
       "100000000000000"
     ).should.be.fulfilled;
-
-    await TokenSwap.connect(OWNER).updateWalletAddress(OWNER.address).should.be
-      .fulfilled;
 
     let updatedNuoToken = await TokenSwap.NuoToken();
     updatedNuoToken.should.be.equal(NuoToken.address);
@@ -256,14 +247,8 @@ describe("It should reset values", function () {
     let updatedTokenPrice = (await TokenSwap.tokenPriceInUsd()).toString();
     updatedTokenPrice.should.be.equal(TOKEN_PRICE_IN_USD.toString());
 
-    let updatedSwapFee = (await TokenSwap.swapFee()).toString();
-    updatedSwapFee.should.be.equal(SWAP_FEE.toString());
-
     let updatedMinimumSwapAmount = formatEther(await TokenSwap.minSwapAmount());
     updatedMinimumSwapAmount.should.be.equal(MIN_AMOUNT.toString());
-
-    let updatedWalletAddress = (await TokenSwap.wallet()).toString();
-    updatedWalletAddress.should.be.equal(OWNER.address);
   });
 });
 

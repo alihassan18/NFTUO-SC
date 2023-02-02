@@ -7,7 +7,6 @@ const SYMBOL = "NUO";
 const TOTAL_SUPPLY = ethers.utils.parseEther("100000000");
 
 const TOKEN_PRICE_IN_USD = "100000000000000";
-const SWAP_RATE = 0;
 const MIN_AMOUNT = "100000000000000";
 const USDC_TOKEN = "0x07865c6E87B9F70255377e024ace6630C1Eaa37F";
 const WALLET = "0xE1043012936b8a877D37bd64839544204638d035";
@@ -24,7 +23,6 @@ async function main() {
   const tokenSwap = await TokenSwap.deploy(
     nuoToken.address,
     TOKEN_PRICE_IN_USD,
-    ethers.utils.parseEther(SWAP_RATE.toString()),
     MIN_AMOUNT,
     USDC_TOKEN,
     WALLET
@@ -48,7 +46,6 @@ async function main() {
     tokenSwap.address,
     nuoToken.address,
     TOKEN_PRICE_IN_USD,
-    ethers.utils.parseEther(SWAP_RATE.toString()).toString(),
     MIN_AMOUNT,
     USDC_TOKEN,
     WALLET

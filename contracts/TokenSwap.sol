@@ -12,7 +12,6 @@ contract TokenSwap is Ownable, Pausable {
     IERC20 public UsdcToken;
     IERC20 public NuoToken;
     uint256 public tokenPriceInUsd;
-    uint256 public swapFee;
     uint256 public minSwapAmount;
 
     event Sold(address indexed seller, uint256 amount);
@@ -21,7 +20,6 @@ contract TokenSwap is Ownable, Pausable {
     constructor(
         IERC20 _tokenAddress,
         uint256 _tokenPriceInUsd,
-        uint256 _swapFee,
         uint256 _minSwapAmount,
         IERC20 _usdcToken
     ) {
@@ -33,7 +31,6 @@ contract TokenSwap is Ownable, Pausable {
         );
         NuoToken = _tokenAddress;
         tokenPriceInUsd = _tokenPriceInUsd;
-        swapFee = _swapFee;
         minSwapAmount = _minSwapAmount;
         UsdcToken = _usdcToken;
     }
@@ -56,10 +53,6 @@ contract TokenSwap is Ownable, Pausable {
 
     function updateTokenPrice(uint256 _tokenPriceInUsd) public onlyOwner {
         tokenPriceInUsd = _tokenPriceInUsd;
-    }
-
-    function updateSwapFee(uint256 _swapFee) public onlyOwner {
-        swapFee = _swapFee;
     }
 
     function updateMinimumSwapAmount(uint256 _minSwapAmount) public onlyOwner {
