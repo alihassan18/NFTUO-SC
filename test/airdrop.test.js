@@ -73,6 +73,17 @@ describe("Deploying Contracts", function () {
     ownerBal.should.be.equal(parseEther(TOTAL_SUPPLY.toString()));
   });
 
+  // it("it should pause", async () => {
+  //   await NuoToken.transfer(user1.address, parseEther("10")).should.be.fulfilled;
+  //   await NuoToken.pause().should.be.fulfilled;
+  //   console.log(formatEther((await NuoToken.balanceOf(user1.address)).toString()));
+  //   await NuoToken.connect(user1).transfer(user2.address, parseEther("10")).should.be.rejectedWith("Pausable");
+  //   await NuoToken.unpause().should.be.fulfilled;
+  //   await NuoToken.connect(user1).transfer(user2.address, parseEther("10")).should.be.fulfilled;
+  //   console.log("Balance of User 1 after", formatEther((await NuoToken.balanceOf(user1.address)).toString()));
+  //   console.log("Balance of User 2 after", formatEther((await NuoToken.balanceOf(user2.address)).toString()));
+  // })
+
   it("Should Deploy Airdrop Contract", async () => {
     const AIRDROP = await ethers.getContractFactory("Airdrop");
     Airdrop = await AIRDROP.deploy(
@@ -279,75 +290,3 @@ describe("Expected funds-in-contract required should now be zero", function () {
     expectedFundsRequired.should.be.equal(parseEther("0"));
   });
 });
-
-// it("Should should fail before 1 month", async () => {
-//   console.log(
-//     "Contract bal before:",
-//     formatEther(await NuoToken.balanceOf(Airdrop.address))
-//   );
-//   await Airdrop.connect(user1)
-//     .claim()
-//     .should.be.rejectedWith("No claims available");
-// });
-
-// it("should return claim calculations - after 1 month", async () => {
-//   await ethers.provider.send("evm_increaseTime", [DAYS_30]);
-//   await ethers.provider.send("evm_mine");
-
-//   // console.log(await Airdrop.getVestInfo(user4.address));
-
-//   let response = await Airdrop.connect(user1).claim();
-//   // console.log(formatEther(response.totalClaimableAmount));
-//   console.log(await Airdrop.getVestInfo(user1.address));
-// });
-
-// it("Should reject", async () => {
-//   await ethers.provider.send("evm_mine");
-
-//   // console.log(await Airdrop.getVestInfo(user1.address));
-
-//   for (let i = 0; i < 9; i++) {
-//     await ethers.provider.send("evm_increaseTime", [DAYS_30]);
-//     let response = await Airdrop.connect(user1).claim();
-//   }
-
-//   // console.log(formatEther(response.totalClaimableAmount));
-//   console.log(await Airdrop.getVestInfo(user1.address));
-
-//   console.log(
-//     "Contract bal after:",
-//     formatEther(await NuoToken.balanceOf(Airdrop.address))
-//   );
-
-//   let response = await Airdrop.connect(user1)
-//     .claim()
-//     .should.be.rejectedWith();
-// });
-// });
-
-// describe("Lastly", function () {
-//   it("Should fetch required funds in airdrop contract", async () => {
-//     let arr = await Airdrop.getWhitelistedAddresses();
-//     console.log(arr);
-//   });
-
-//   it("Funds required in contract", async () => {
-//     console.log(
-//       "Expected Token Amount:",
-//       formatEther(await Airdrop.expectedTokensAmount())
-//     );
-//     console.log(
-//       "Balance of Airdrop   :",
-//       formatEther(await NuoToken.balanceOf(Airdrop.address))
-//     );
-//     let fundsReq = await Airdrop.fundsRequiredInContract();
-//     console.log(parseFloat(formatEther(fundsReq)));
-
-//     // console.log(fundsReq);
-//   });
-
-//   it("Should check if whitelisted", async () => {
-//     console.log(await Airdrop.isWhitelisted(user1.address));
-//     console.log(await Airdrop.isWhitelisted(rest[0].address));
-//   });
-// });

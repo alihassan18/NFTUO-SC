@@ -25,9 +25,7 @@ contract NuoToken is ERC20, Ownable, Pausable {
         address from,
         address to,
         uint256 amount
-    ) internal virtual override {
-        _requireNotPaused();
-    }
+    ) internal override whenNotPaused {}
 
     function burn(uint256 amount) public {
         _burn(msg.sender, amount);
