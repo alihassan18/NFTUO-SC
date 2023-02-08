@@ -221,13 +221,13 @@ contract Staking is Vault, Ownable, Pausable, ReentrancyGuard {
         );
 
         uint256 _rewardAmount = _restakeableRewards(_stakeId);
-        uint256 _amountToTransfer = _stakeInfo.stakedAmount + _rewardAmount;
 
         _stakeInfo.lastClaimedAt = block.timestamp;
         _stakeInfo.totalClaimed += _rewardAmount;
         _stakeInfo.unstaked = true;
 
-        Token.transferFrom(wallet, msg.sender, _amountToTransfer);
+        Token.transfer(msg.sender, _stakeInfo.stakedAmount);
+        Token.transferFrom(wallet, msg.sender, _rewardAmount);
 
         emit Unstaked(
             msg.sender,
