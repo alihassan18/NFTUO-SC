@@ -82,10 +82,9 @@ contract Staking is Vault, Ownable, Pausable, ReentrancyGuard {
         return airdropContractAddress;
     }
 
-    function setAirdropContractAddress(address _airdropContractAddress)
-        public
-        onlyOwner
-    {
+    function setAirdropContractAddress(
+        address _airdropContractAddress
+    ) public onlyOwner {
         require(
             address(_airdropContractAddress) != address(0),
             "Stake: Invalid address"
@@ -95,23 +94,13 @@ contract Staking is Vault, Ownable, Pausable, ReentrancyGuard {
     }
 
     // Get all Vaults [enum]
-    function getVaults()
-        public
-        pure
-        returns (
-            Vaults,
-            Vaults,
-            Vaults
-        )
-    {
+    function getVaults() public pure returns (Vaults, Vaults, Vaults) {
         return (Vaults.vault_1, Vaults.vault_2, Vaults.vault_3);
     }
 
-    function getVaultConfiguration(Vaults _vault)
-        public
-        view
-        returns (VaultConfig memory)
-    {
+    function getVaultConfiguration(
+        Vaults _vault
+    ) public view returns (VaultConfig memory) {
         return VAULTS[uint256(_vault)];
     }
 
@@ -171,18 +160,17 @@ contract Staking is Vault, Ownable, Pausable, ReentrancyGuard {
     }
 
     // Restake rewards
-    function restakeRewards(uint256 _stakeId, Vaults _vault)
-        public
-        whenNotPaused
-        nonReentrant
-    {
+    function harvestRewardTokens(
+        uint256 _stakeId,
+        Vaults _vault
+    ) public whenNotPaused nonReentrant {
         StakeInfo storage _stakeInfo = stakeInfoById[_stakeId];
         require(
             _stakeInfo.walletAddress == msg.sender,
             "Stake: Not the previous staker"
         );
         require(!_stakeInfo.unstaked, "Stake: No staked Tokens in the vault");
-        uint256 _amountToRestake = _restakeableRewards(_stakeId);
+        uint256 _amountToRestake = _calculateRewards(_stakeId);
 
         require(
             (totalStakedInVault[_stakeInfo.vault] + _amountToRestake) <=
@@ -220,7 +208,7 @@ contract Staking is Vault, Ownable, Pausable, ReentrancyGuard {
             "Stake: Cannot unstake before the cliff"
         );
 
-        uint256 _rewardAmount = _restakeableRewards(_stakeId);
+        uint256 _rewardAmount = _calculateRewards(_stakeId);
 
         _stakeInfo.lastClaimedAt = block.timestamp;
         _stakeInfo.totalClaimed += _rewardAmount;
@@ -247,58 +235,33 @@ contract Staking is Vault, Ownable, Pausable, ReentrancyGuard {
             "Stake: Not the staker"
         );
 
-        VaultConfig memory _vault = VAULTS[uint256(_stakeInfo.vault)];
-        require(
-            block.timestamp - _stakeInfo.stakedAt >= _vault.cliffInDays,
-            "Stake: Cannot claim reward before the cliff"
-        );
+        uint256 _rewardAmount = _calculateRewards(_stakeId);
 
-        (uint256 _claimableAmount, uint256 numOfYears) = _claimableReward(
-            _stakeInfo,
-            _vault
-        );
+        require(_rewardAmount > 0, "Stake: No Rewards to Claim");
 
-        require(
-            _claimableAmount > 0 && numOfYears > 0,
-            "Stake: No Claims available"
-        );
+        _stakeInfo.lastClaimedAt = block.timestamp;
+        _stakeInfo.totalClaimed += _rewardAmount;
 
-        _stakeInfo.lastClaimedAt = (_stakeInfo.lastClaimedAt +
-            (ONE_YEAR * numOfYears));
-        _stakeInfo.totalClaimed += _claimableAmount;
-
-        Token.transferFrom(wallet, msg.sender, _claimableAmount);
+        Token.transferFrom(wallet, msg.sender, _rewardAmount);
 
         emit Claimed(
             msg.sender,
             _stakeId,
-            _claimableAmount,
+            _rewardAmount,
             _stakeInfo.vault,
             block.timestamp
         );
     }
 
-    function getClaimableTokens(uint256 _stakeId)
-        public
-        view
-        returns (uint256)
-    {
-        StakeInfo memory _stakeInfo = stakeInfoById[_stakeId];
-        VaultConfig memory _vault = VAULTS[uint256(_stakeInfo.vault)];
-        (uint256 claimableAmount, ) = _claimableReward(_stakeInfo, _vault);
-        return claimableAmount;
-    }
-
     // Staking Reward by Stake Id
     function getStakingReward(uint256 _stakeId) public view returns (uint256) {
-        return _restakeableRewards(_stakeId);
+        return _calculateRewards(_stakeId);
     }
 
-    function getStakeInfo(address _addr, Vaults _vault)
-        public
-        view
-        returns (StakeInfo[] memory stakeInfos)
-    {
+    function getStakeInfo(
+        address _addr,
+        Vaults _vault
+    ) public view returns (StakeInfo[] memory stakeInfos) {
         uint256[] memory stakeIds = stakeIdsInVault[_vault][_addr];
         stakeInfos = new StakeInfo[](stakeIds.length);
 
@@ -307,11 +270,9 @@ contract Staking is Vault, Ownable, Pausable, ReentrancyGuard {
         }
     }
 
-    function getStakeInfoById(uint256 _stakeId)
-        public
-        view
-        returns (StakeInfo memory)
-    {
+    function getStakeInfoById(
+        uint256 _stakeId
+    ) public view returns (StakeInfo memory) {
         return stakeInfoById[_stakeId];
     }
 

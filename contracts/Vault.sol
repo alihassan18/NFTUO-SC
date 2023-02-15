@@ -89,11 +89,9 @@ abstract contract Vault {
         totalStakedInVault[_vault] += _amount;
     }
 
-    function _restakeableRewards(uint256 _stakeId)
-        internal
-        view
-        returns (uint256 rewardAmount)
-    {
+    function _calculateRewards(
+        uint256 _stakeId
+    ) internal view returns (uint256 rewardAmount) {
         StakeInfo memory stakeInfo = stakeInfoById[_stakeId];
         VaultConfig memory vault = VAULTS[uint256(stakeInfo.vault)];
         uint256 endTime = block.timestamp >
@@ -112,23 +110,5 @@ abstract contract Vault {
         rewardAmount =
             (stakeInfo.stakedAmount * rewardPercentage) /
             (100 * NUMERATOR);
-    }
-
-    function _claimableReward(
-        StakeInfo memory _stakeInfo,
-        VaultConfig memory _vault
-    ) internal view returns (uint256 claimableAmount, uint256 numOfYears) {
-        uint256 oneYearReward = (_stakeInfo.stakedAmount * _vault.apr) / 100;
-        uint256 endTime = block.timestamp >
-            (_stakeInfo.stakedAt + _vault.cliffInDays)
-            ? _stakeInfo.stakedAt + _vault.cliffInDays
-            : block.timestamp;
-
-        if (endTime < _stakeInfo.lastClaimedAt) {
-            return (0, 0);
-        }
-        numOfYears = (block.timestamp - _stakeInfo.lastClaimedAt) / ONE_YEAR;
-        uint256 _reward = oneYearReward * numOfYears;
-        claimableAmount = _reward - _stakeInfo.totalClaimed;
     }
 }

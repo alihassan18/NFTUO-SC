@@ -160,7 +160,7 @@ describe("Staking, re-staking and claiming should fail if Paused", function () {
 
   it("Should fail to Restake", async () => {
     await Staking.connect(users[0])
-      .restakeRewards(1, 0)
+      .harvestRewardTokens(1, 0)
       .should.be.rejectedWith("Pausable");
   });
 
@@ -462,7 +462,7 @@ describe("Shouldn't Restake when", function () {
   it("Address tries to claim someone else's reward", async () => {
     for (let i = 0; i < users.length; i++) {
       await Staking.connect(users[i])
-        .restakeRewards(i, 0)
+        .harvestRewardTokens(i, 0)
         .should.be.rejectedWith("Stake: Not the previous staker");
     }
   });
@@ -470,7 +470,7 @@ describe("Shouldn't Restake when", function () {
   it("Zero reward earned", async () => {
     for (let i = 0; i < users.length; i++) {
       await Staking.connect(users[i])
-        .restakeRewards(i + 1, 0)
+        .harvestRewardTokens(i + 1, 0)
         .should.be.rejectedWith("Stake: Insufficient rewards to stake");
     }
   });
@@ -758,7 +758,7 @@ describe("Re-claim", function () {
 //   })
 
 //   it("Should fetch total Claimable Amount", async () => {
-//     await Staking.connect(user1).restakeRewards(1)
+//     await Staking.connect(user1).harvestRewardTokens(1)
 //   })
 
 //   it("should have stake 2", async () => {
