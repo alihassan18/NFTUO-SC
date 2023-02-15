@@ -30,25 +30,25 @@ To use the contract, an instance of the TokenSwap contract needs to be deployed 
 
 ### After deployment, the contract owner can perform the following operations:
 
-##### Pause and Unpause
+#### Pause and Unpause
 The contract owner can pause and resume the contract by calling the `pause()` and `unpause()` functions, respectively.
 
-##### Update Token Address
+#### Update Token Address
 The contract owner can update the token address by calling the `updateToken()` function and passing the new token address.
 
-##### Update Token Price
+#### Update Token Price
 The contract owner can update the token price by calling the `updateTokenPrice()` function and passing the new token price in USD.
 
-##### Update Minimum Swap Amount
+#### Update Minimum Swap Amount
 The contract owner can update the minimum swap amount by calling the `updateMinimumSwapAmount()` function and passing the new minimum swap amount.
 
-##### Update USDC Token Address
+#### Update USDC Token Address
 The contract owner can update the USDC token address by calling the `updateUsdcToken()` function and passing the new USDC token address.
 
-##### Withdraw Tokens
+#### Withdraw Tokens
 The contract owner can withdraw tokens from the contract by calling the `withdrawTokens()` function and passing the amount of tokens to withdraw.
 
-##### Swap Tokens
+#### Swap Tokens
 The `swap()` function is the main function of the contract. It takes two parameters: the name of the token to swap (**NUO** or **USDC**) and the amount of tokens to swap. If the token name is **NUO**, the function sells the tokens for **USDC**. If the token name is USDC, the function buys the tokens with **USDC**.
 
 ### Events
