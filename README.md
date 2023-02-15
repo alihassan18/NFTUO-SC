@@ -156,6 +156,7 @@ The constructor takes the following parameters:
 ### License
 The contract is licensed under the [MIT License](https://opensource.org/license/mit-0/).
 
+### Gas Report (USD)
 ```shell
 ·-----------------------------------|---------------------------|-------------|-----------------------------·
 |        Solc version: 0.8.9        ·  Optimizer enabled: true  ·  Runs: 200  ·  Block limit: 30000000 gas  │
