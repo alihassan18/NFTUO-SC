@@ -14,6 +14,7 @@ npx hardhat run scripts/deploy.js
 # Smart Contracts Overview:
 
 ## 1. Token Swap Smart Contract
+```
 A smart contract to swap between ERC20 tokens and USDC. The contract can be paused and resumed by the contract owner, and supports updating the token price, the minimum swap amount, and the USDC token address. The swap function takes a token name and an amount, then it sells the token for USDC or buys the token with USDC depending on the given token name.
 
 ### Requirements
@@ -30,7 +31,7 @@ To use the contract, an instance of the TokenSwap contract needs to be deployed 
 
 ### After deployment, the contract owner can perform the following operations:
 
-#### Pause and Unpause
+#### Pause and Unpause: 
 The contract owner can pause and resume the contract by calling the `pause()` and `unpause()` functions, respectively.
 
 #### Update Token Address
@@ -58,3 +59,6 @@ The contract emits the following events:
 `Purchased(address indexed buyer, uint256 amount)`: emitted when a buyer purchases tokens.
 ### License
 The contract is licensed under the [MIT License](https://opensource.org/license/mit-0/).
+
+```
+*** 
